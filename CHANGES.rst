@@ -1,3 +1,32 @@
+0.0.17.7
+------------
+development tree is rift_O4c.
+
+Point release targeting MR https://git.ligo.org/rapidpe-rift/rift/-/merge_requests/48
+  - cepp_basic: LE_extrinsic n_eff cannot be lower than normal ILE n_eff
+  - factored_likelihood: lnL_t no more offset
+  - ILE: fix type casting issue for XPHM-style args going through Asimov
+  - convert.._inference2ile: pass psi from input to output. 
+
+
+0.0.17.6
+------------
+development tree is rift_O4c.
+   - cepp_basic two corner cases impacting calmarg args: minor fix use of package name if calmarg extra args passed to
+     gwsignal; add transfer-input-files to Calib_reweight.sub writer to pass h5 dependencies to reweighting code (rc0)
+   - calibration_reweighting.py: fix typo and parsing issue for --extra_waveform_kwargs, since argument not usually
+     fully quoted unlike ILE args (rc1)
+   - calibration_reweighting: typos in previous commits (rc2)
+   - pseudo_pipe --internal-general-request-disk (rc3)
+   - calib_reweight scitokens (rc4)
+release is rc4
+
+0.0.17.5
+------------
+development tree is rift_O4c.
+   - dag_utils/write_bilby_pickle_sub parsing error if only *one* interferometer is supplied in the bilby ini file. (rc0)
+Release is rc0
+     
 0.0.17.4
 ------------
 development tree is rift_O4c_updates/rift_O4c; see https://git.ligo.org/rapidpe-rift/rift/-/merge_requests/45
