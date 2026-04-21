@@ -2,7 +2,7 @@
 
 This tutorial describes a **complete, reproducible workflow** for:
 
-1. Generating mock compact-binary injection populations using **GWKokab**, and  
+1. Generating mock compact-binary injections using **GWKokab**.  
 2. Producing realistic **parameter estimates (PEs)** for those injections using **RIFT**.
 
 To avoid dependency and version conflicts, **GWKokab and RIFT must be installed in separate conda environments**.
@@ -11,159 +11,195 @@ To avoid dependency and version conflicts, **GWKokab and RIFT must be installed 
 
 ## Overview of the Workflow
 
-1. Install and validate **GWKokab**
-2. Generate mock injections (`injections.dat`)
-3. Sanity-check GWKokab population inference
-4. Configure **RIFT** and the Makefile
-5. Prepare injections for RIFT
-6. Generate MDC injections
-7. Create RIFT run directories
+This tutorial follows the pipeline below:
+
+1. Set up and validate **GWKokab**
+2. Configure the **Makefile** and `pop-example.ini`
+3. Create the **RIFT** environment
+4. Convert GWKokab injections into RIFT-readable format
+5. Create RIFT run directories, signal frames, and combined frames
+6. Compute SNR and filter low-SNR events
+7. Run a final pre-submission checklist
 8. Submit PE jobs
-9. Produce plots
-10. Run diagnostics and checks
+9. Plot results and run diagnostics
+10. Collect PE files for population inference
 
-## Step 1 — Set Up GWKokab
+## Step 0 — Set Up GWKokab
 
-Follow the official installation guide:
+Please see the GWKokab documentation (https://github.com/kokabsc/gwkokab) for instructions on generating mock injections, fake posteriors, and delta-error realizations.
 
-https://gwkokab.readthedocs.io/en/latest/installation.html
-
-Create and activate a dedicated conda environment for gwkokab:
-
-```bash
-conda create -n gwkenv python=3.13
-conda activate gwkenv
-```
-Clone and install GWKokab:
-
-```bash
-git clone https://github.com/gwkokab/gwkokab.git
-cd gwkokab
-make install PIP_FLAGS=--upgrade EXTRA=cuda13
-```
-
-## Step 2 — Generate Mock Events
-Use the GWKokab example workflow to generate mock posterior estimates:
-- Documentation:
-https://gwkokab.readthedocs.io/en/latest/examples/generating_mock_posterior_estimates.html
-- Example repository:
-https://github.com/gwkokab/hello-gwkokab/tree/main/generating_mock_posterior_estimates
-
-- Run one of the generators (e.g. genie_n_pls_m_gs).
-This will create a directory named data/realization_* containing: `injections.dat` and fake posteriors files of each event.
-- Each row corresponds to the intrinsic parameters of one compact-binary system.
-The number of rows equals the number of simulated events.
-
-## Step 3 — Sanity Check: GWKokab Population Inference
-Before proceeding to RIFT, verify that GWKokab can recover the injected population hyperparameters either with delta error or fake posteriors.
-- Documentation:
-https://gwkokab.readthedocs.io/en/latest/examples/hbi_discrete_method.html
-- Example repository:
-https://github.com/gwkokab/hello-gwkokab/tree/main/hbi_discrete_method
+Before proceeding to RIFT, verify that GWKokab can recover the injected population hyperparameters using either delta-error realizations or fake posteriors.
 
 Only proceed once this step works correctly.
 
-## Step 4 — Set Up RIFT (Separate Environment)
-- RIFT uses a different software stack and must be installed in a separate conda environment.
-- The scripts in this repository automate the RIFT workflow for population studies:
-    - Environment creation
-    - Injection conversion
-    - Run-directory setup
-    - Job submission
+## Step 2 — Configure the Makefile
 
-All steps are controlled through a single Makefile.
-## Step 5 — Configure the Makefile
-Before running any RIFT commands, update the required variables in the Makefile.
-- Mainly you can provide desired file names, repo names, env name, absolute paths, and user name.
+RIFT uses a different software stack and must be installed in a separate conda environment.
+Before running any RIFT commands, update the required variables in the `Makefile`, including the environment name, usernames, repository names, file names, and absolute paths.
 
 ```bash
-ENV_NAME=rift-pop
+ENV_NAME=rift-gwkokab
 USER = muhammad.zeeshan
 
 # Must match the run directory specified in the ini file
 RUNDIR     = '${PWD}/ecc_injections'
-PARAM_FILE = '${PWD}/inj_demo.dat'
+PARAM_FILE = '${PWD}/synthetic_events.hdf5'
 INI_FILE   = '${PWD}/pop-example.ini'
 ```
-All the user desired options *must* be set in the ini file. This includes things like what spin settings you need (none, aligned, precessing), whether or not you want an eccentric analysis, etc. All analysis choices (mass ranges, spins, eccentricity, waveform approximant, priors) must be specified in `pop-example.ini` file as follows.
+All user-defined analysis options must be set in `pop-example.ini`. This includes whether the run is non-spinning, aligned-spin, precessing-spin, circular, or eccentric, as well as the waveform approximant and all prior settings.
 
 ```bash
-[pp]     
-n_events=204
+[pp]
+n_events=155
 working_directory=ecc_injections
 test_convergence=True
+
 [priors]
 mc_min=4.35
-mc_max=70.0
-m_min=3.0
-eta_min=0.05
+mc_max=43.5
+m_min=5.0
+eta_min=0.08
 eta_max=0.24999
 ... spin, eccentricity, redshift etc ...
 ```
 
 Important:
-All prior ranges in pop-example.ini must exactly match the ranges used to generate injections.dat with GWKokab.
-If they differ, the resulting PEs will be invalid. So, always double check `[pp]` and `[priors]` section in `.ini` file.
-You also need to update noise frame paths and user name in `.ini` file.
+- The value of `n_events` must match the number of events in `synthetic_events.hdf5`.
+- All prior ranges in `pop-example.ini` must exactly match the ranges used to generate `synthetic_events.hdf5` with GWKokab.
+- If priors do not match the injections, the resulting parameter estimates will be biased.
+- Also update the noise-frame paths and username in `pop-example.ini` where needed.
 
-## Step 6 — Create the RIFT Environment
+## Step 3 — Create the RIFT Environment
 ```bash
 make setup-env
 ```
 This command:
-- Creates the rift-pop environment based on igwn-py310
+- Creates the `rift-gwkokab` environment based on igwn-py310
 - Clones the RIFT codebase
 - Installs all required dependencies
 - Enables eccentric waveform support (e.g. SEOBNRv5EHM)
 
-Note: This setup assumes access to the LDG and igwn-py310.
-## Step 7 — Prepare Injections for RIFT
-- Copy `injections.dat` from the GWKokab output directory into this RIFT repository.
-- Add luminosity distance, which is required by RIFT:
+Note: This setup assumes access to the LDG and the `igwn-py310` software stack.
+## Step 4 — Prepare Injections for RIFT
+Copy `synthetic_events.hdf5` from the GWKokab output directory into this RIFT repository, then run:
 ```bash
-python lum_distance.py --input ./injections.dat --output ./injections.dat
+make injections
 ```
-## Step 8 — Generate MDC Injections
-
-This step:
+This command:
 - Converts injections into RIFT-compatible format
-- Generates `mdc.xml.gz` and save it into `ecc_injections`
-- Writes all outputs into the directory specified by RUNDIR (ecc_injections)
-- It uses:
-    - PARAM_FILE for parameters
-    - The waveform approximant specified in the Makefile
+- Generates `mdc.xml.gz` and saves it in `ecc_injections`
+- Writes all outputs into the directory specified by `RUNDIR`
 
-## Step 9 — Create RIFT Run Directories
+## Step 5 — Create RIFT Run Directories
+Before running the following command, make sure the PSD paths are correct and that the number of noise frames is equal to or greater than the number of injections. 
 ```bash
 make rundir
 ```
-This command:
-- Generates signal and combined frames for each event
+- It will generate signal and combined frames for each event
 - Executes pp_RIFT_with_ini
 - Creates production-style RIFT run directories
 
-Important: Copy PSDs into Each Run Directory, because ach event requires its own PSD files:
+After the run directories are created, copy PSDs into each `rundir`, because each event requires its own PSD files:
 
 ```bash
 for d in /home/muhammad.zeeshan/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/ecc_injections/analy*/rundir; do
   cp /home/muhammad.zeeshan/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/psds/rundir_psds/*psd.xml.gz "$d"
 done
 ```
-## Step 10 — Submit PE Jobs
+
+---
+
+## Step 6 — Validate the Setup Before Submission
+
+Before submitting expensive PE jobs, validate the setup carefully.
+
+### 6.1 Verify Injection Consistency
+- Ensure the number of events in `synthetic_events.hdf5` matches `n_events` in `pop-example.ini`.
+- Make sure prior ranges in `[priors]` exactly match the injection ranges used in GWKokab.
+
+⚠️ Mismatched priors will bias parameter-estimation results.
+
+### 6.2 Check Noise Frames
+- The number of noise frames must be **equal to or greater than** the number of injections.
+- Each event should have a corresponding noise realization.
+- You can generate your own or copy PSDs and noise frames on CIT. `/home/muhammad.zeeshan/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/psds`
+
+### 6.3 Verify File Paths
+Double-check paths in:
+- `Makefile`
+- `pop-example.ini`
+- `write_mdc.py`
+
+Incorrect paths are a common cause of silent failures.
+
+### 6.4 Inspect Generated Outputs
+For each event, make sure the workflow has created:
+- signal frames
+- combined frames
+- `.gwf` strain files
+- `.cache` files
+
+### 6.5 Detect Empty Event Directories
+Run:
+```bash
+find event_* -type d -empty
+```
+No event directory should be empty before proceeding.
+
+### 6.6 Monitor Logs
+While the workflow is running, monitor logs with:
+```bash
+tail -f nohup.out
+```
+Look for missing files, waveform failures, and path issues.
+
+### 6.7 Confirm Physical Validity of Injections
+Avoid injections with:
+- extreme mass ratios
+- very high eccentricity
+
+These can lead to waveform failures, missing strain files, or empty combined-frame directories.
+
+## Step 7 — Compute SNR and Filter Low-SNR Events
+
+After generating signal frames, compute the SNR for each event using the `compute_snr.sh` and it will generate the `snr_list.txt`.
+
+- Recommended threshold: **SNR > 10**
+- Move low-SNR events into a separate directory such as `low_snr_events/` using `move_low_snr.sh`
+- You may also want to separate `master_clean.dag` file for low and high SNR events using `dag_update_with_snr.sh`
+- Only proceed with high-SNR events for PE runs
+
+This reduces unnecessary computational cost.
+
+## Step 8 — Final Pre-Submission Checklist
+
+Before running `make submit`, confirm all of the following:
+
+- No empty event directories:
+```bash
+find event_* -type d -empty
+```
+- Signal frames and combined frames exist for all events
+- PSD files have been copied into each `rundir`
+- Noise frames match or exceed the injection count
+- All file paths are correct
+- `nohup.out` shows no path or waveform errors
+
+## Step 9 — Submit PE Jobs
 ```bash
 make submit
 ```
-it will submit your PE production jobs and will take days to complete. So, you can monitor using the following commands.
+This submits the PE production jobs. These runs may take days to complete, so monitor them with:
 ```bash
 condor_q
 condor_q -hold
 condor_q -run
 condor_rm -all
 ```
-For additional information use `condor -h`
-## Step 11 — Plotting Results
+For additional information, use `condor -h`.
+## Step 10 — Plotting Results and Diagnostics
 
-RIFT provides automated plotting scripts which you can also use during runs to see the plots.
+RIFT provides automated plotting scripts that you can also use during runs to monitor progress.
 - plot_iterationsAndSubdag_animation_with.sh
 - plotme_anim_ecc.sh
 
@@ -171,7 +207,7 @@ To generate corner plots for all events:
 ```bash
 plot_all.sh ./ecc_injections
 ```
-## Debugging, Sanity Checks, and Common Issues
+## Additional Diagnostics and Common Issues
 ### Posterior Completion Check
 ```bash
 for i in analysis_event_*; do
@@ -179,17 +215,18 @@ for i in analysis_event_*; do
 done
 ```
 A completed run should contain `posterior_samples-4.dat`
-## Step 12 — Gather PE file for Population Inference
-- We need the PE files from each rundir in a single folder to do the population inference using GWKokab. You can run the script
+## Step 11 — Gather PE Files for Population Inference
+To perform population inference with GWKokab, gather the PE files from each `rundir` into a single folder by running:
 ```bash
 ./collect_all.sh
 ```
-It will collect the required file `extrinsic_posterior_samples.dat` for each rundir and save them with their numbers in a folder called `collected_dat_files`.
-- Finally, you can run the python script as follows to rename the header accepted by GWKokab and also let you choose random PEs per event.
+This collects the required file `extrinsic_posterior_samples.dat` from each `rundir` and saves the outputs in a folder called `collected_dat_files`.
+
+Finally, run the following Python command to rename headers into the GWKokab-accepted format and optionally choose a random subset of PE samples per event:
 ```bash
 python gwk_pop_conversion.py --input-dir ./collected_dat_files --output-dir ./rift_pes --n-rows 2000
 ```
-
+Note: The latest GWKokab uses .h5 file format instead of .dat.
 
 
 ### Job Progress Tracking
@@ -217,6 +254,5 @@ rm -rf ~/.local/bin/lal_path2cache` then rerun `make rundir
 - Always use absolute paths in RIFT configuration files.
 - local.cache files must not be empty.
 - Very loud events may take significantly longer to converge.
-- Discard or re-run the events who give log-likelihood less than 5.
-- If your corner plot of each event iteration legend shows `F3`, it shows a good complete run.
-
+- Discard or re-run events that give a log-likelihood less than 5.
+- If the corner-plot legend for an event iteration shows `F3`, it usually indicates a good completed run.
