@@ -1,8 +1,8 @@
 #!/bin/bash
 
-THRESHOLD=6
+THRESHOLD=8
 
-BASE_DIR="/home/muhammad.zeeshan/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations"
+BASE_DIR="/home/muhammad.zeeshan/projects/active/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations"
 SNR_FILE="$BASE_DIR/snr_list.txt"
 MASTER_DAG="$BASE_DIR/ecc_injections/master_clean.dag"
 

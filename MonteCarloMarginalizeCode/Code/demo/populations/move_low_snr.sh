@@ -1,8 +1,8 @@
 #!/bin/bash
 
-THRESHOLD=6
+THRESHOLD=8
 
-BASE_DIR="/home/muhammad.zeeshan/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations"
+BASE_DIR="/home/muhammad.zeeshan/projects/active/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations"
 SIGNAL_BASE="$BASE_DIR/ecc_injections/signal_frames"
 COMBINED_BASE="$BASE_DIR/ecc_injections/combined_frames"
 RUNDIRS_BASE="$BASE_DIR/ecc_injections/"
