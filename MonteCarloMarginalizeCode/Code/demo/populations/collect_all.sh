@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set your main directory where analysis_event_* live
-MAIN_DIR="/home/muhammad.zeeshan/projects/active/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/ecc_injections"
+MAIN_DIR="/home/muhammad.zeeshan/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/ecc_injections"
 
 # Set output directory
 OUT_DIR="./collected_dat_files"

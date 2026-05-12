@@ -6,9 +6,9 @@ USER := muhammad.zeeshan
 # note this MUST match dirname in your ini file
 RUNDIR := $(PWD)/ecc_injections
 PARAM_FILE := $(PWD)/synthetic_events.hdf5
-INI_FILE := /home/$(USER)/projects/active/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/pop-example.ini
+INI_FILE := /home/$(USER)/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/pop-example.ini
 
-WRITE_MDC := /home/$(USER)/projects/active/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/write_mdc.py
+WRITE_MDC := /home/$(USER)/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations/write_mdc.py
 
 CONDA_SH := /cvmfs/software.igwn.org/conda/etc/profile.d/conda.sh
 BASE_ENV := /cvmfs/software.igwn.org/conda/envs/igwn-py310

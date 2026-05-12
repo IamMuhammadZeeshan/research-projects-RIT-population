@@ -8,4 +8,4 @@ export RIFT_GETENV='LD_LIBRARY_PATH,PATH,PYTHONPATH,*RIFT*,LIBRARY_PATH'
 export RIFT_GETENV_OSG='*RIFT*,NUMBA_CACHE_DIR'
 export NUMBA_CACHE_DIR=/tmp  # needs to be passed to OSG
 export SINGULARITY_BASE_EXE_DIR=/usr/local/bin/
-export SINGULARITY_RIFT_IMAGE=osdf:///igwn/cit/staging/richard.oshaughnessy/rift_containers/rift_container_ros_seobnr_rift17p3.sif
+export SINGULARITY_RIFT_IMAGE=osdf:///igwn/cit/staging/richard.oshaughnessy/rift_containers/rift_container_ros_o4c-17.8rc10-20260410.sif

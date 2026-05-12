@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Base directories
-BASE_DIR="/home/muhammad.zeeshan/projects/active/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations"
+BASE_DIR="/home/muhammad.zeeshan/projects/research-projects-RIT/MonteCarloMarginalizeCode/Code/demo/populations"
 SIGNAL_DIR="$BASE_DIR/ecc_injections/signal_frames"
 PSD_DIR="$BASE_DIR/psds/rundir_psds"
 
